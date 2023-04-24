@@ -93,10 +93,13 @@ class Socket:
                 self.connId += 1 # use it for counting incoming connections, no other uses really
                 hadNewConnId = False
             pkt = self._recv()
+
+
+
             if pkt and pkt.isSyn:
                 hadNewConnId = True
                 ### UPDATE CORRECTLY HERE
-                clientSock = Socket(connId = self.connId, synReceived=True, sock=self.sock, inSeq=????, noClose=True)
+                clientSock = Socket(connId=self.connId, synReceived=True, sock=self.sock, inSeq=pkt.seqNum + 1, noClose=True)
                 # at this point, syn was received, ack for syn was sent, now need to send our SYN and wait for ACK
                 clientSock._connect(self.lastFromAddr)
                 return clientSock
@@ -129,7 +132,7 @@ class Socket:
         outPkt = None
         if inPkt.isSyn:
             ### UPDATE CORRECTLY HERE
-            ### self.inSeq = ???
+            self.inSeq = inPkt.seqNum + 1
             if inPkt.connId != 0:
                 self.connId = inPkt.connId
             self.synReceived = True
@@ -139,7 +142,7 @@ class Socket:
         elif inPkt.isFin:
             if self.inSeq == inPkt.seqNum: # all previous packets has been received, so safe to advance
                 ### UPDATE CORRECTLY HERE
-                ### self.inSeq = ???
+                self.inSeq = inPkt.seqNum + 1
                 self.finReceived = True
             else:
                 # don't advance, which means we will send a duplicate ACK
@@ -154,11 +157,10 @@ class Socket:
             if self.finReceived:
                 raise RuntimeError("Received data after getting FIN (incoming connection closed)")
 
-            if self.inSeq == inPkt.seqNum: # all previous packets has been received, so safe to advance
+            if self.inSeq == inPkt.seqNum: # all previous packets have been received, so safe to advance
                 ### UPDATE CORRECTLY HERE
-                ### self.inSeq = ???
+                self.inSeq = inPkt.seqNum + len(inPkt.payload)
                 self.inBuffer += inPkt.payload
-            else:
                 # don't advance, which means we will send a duplicate ACK
                 pass
 
